@@ -1,4 +1,5 @@
 import re
+import pymorphy2
 
 from deeppavlov import configs, build_model
 
@@ -7,11 +8,13 @@ class ErrorCorrector:
     def __init__(self):
         self.correctorModel = build_model(configs.spelling_correction.brillmoore_kartaslov_ru, download=False)
 
+
     def preprocessText(self, textReadfromFile):
         textToWords = self.__divideIntoTokens(textReadfromFile)
         wordsCorrected = self.correctorModel(textToWords)
         rightWordsCaseList = self.__correctMatch(textToWords, wordsCorrected)
-        textCorrected = self.__insertRightCasetoText(rightWordsCaseList, textToWords, textReadfromFile)
+        nomensGeoxList = self.__defineNomens(rightWordsCaseList)
+        textCorrected = self.__insertRightCasetoText(nomensGeoxList, textToWords, textReadfromFile)
         return textCorrected
 
     def __divideIntoTokens(self, text):
@@ -39,12 +42,24 @@ class ErrorCorrector:
             return str
 
     def __insertRightCasetoText(self, rightWordsCaseList, textToWords, textReadfromFile):
-        for word in range(len(rightWordsCaseList)):
-            for token in range(len(textToWords)):
-                textCorrected = re.sub(textToWords[token], rightWordsCaseList[word], textReadfromFile)
+        if len(rightWordsCaseList) == len(textToWords):
+            i = 0
+            while i < len(textToWords):
+                textCorrected = re.sub(textToWords[i], rightWordsCaseList[i], textReadfromFile)
                 textReadfromFile = textCorrected
-                token += 1
-                word += 1
-            break
+                i += 1
+        else:
+            print('Check the length of lists')
         textCorrected = textReadfromFile
         return textCorrected
+
+    def __defineNomens(self, wordsCorrected):
+        nomensGeoxList = []
+        morph = pymorphy2.MorphAnalyzer()
+        for word in wordsCorrected:
+            grammem = morph.parse(word)
+            for tags in grammem:
+                if "Surn" in tags.tag or "Name" in tags.tag or "Geox" in tags.tag:
+                    word = word.title()
+            nomensGeoxList.append(word)
+        return nomensGeoxList
