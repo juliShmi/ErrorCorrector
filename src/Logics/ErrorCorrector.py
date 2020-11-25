@@ -1,16 +1,13 @@
 import re
 
-from deeppavlov import configs
-from deeppavlov.core.commands.infer import build_model
+from deeppavlov import configs, build_model
 
 
 class ErrorCorrector:
-
     def __init__(self):
-        self.correctorModel = build_model(configs.spelling_correction.levenshtein_corrector_ru, download=True)
+        self.correctorModel = build_model(configs.spelling_correction.brillmoore_kartaslov_ru, download=False)
 
-
-    def correctText(self, textReadfromFile):
+    def preprocessText(self, textReadfromFile):
         textToWords = self.__divideIntoTokens(textReadfromFile)
         wordsCorrected = self.correctorModel(textToWords)
         rightWordsCaseList = self.__correctMatch(textToWords, wordsCorrected)
@@ -18,18 +15,17 @@ class ErrorCorrector:
         return textCorrected
 
     def __divideIntoTokens(self, text):
-        textTokenized = re.findall(r'\w+(?:[-]\w+)|[А-Яа-яЁё]+', text)
+        textTokenized = re.findall(r'\d+(?:,\d+)?|[-\w]+|[А-Яа-яЁё]+', text)
         return textTokenized
 
     def __correctMatch(self, textToWords, wordsCorrected):
         rightCase = []
-        for correctWord in range(len(wordsCorrected)):
-            for token in range(len(textToWords)):
-                rightWord = self.__checkCase(textToWords[token])(wordsCorrected[correctWord])
+        if len(textToWords) == len(wordsCorrected):
+            i = 0
+            while i < len(textToWords):
+                rightWord = self.__checkCase(textToWords[i])(wordsCorrected[i])
                 rightCase.append(rightWord)
-                list.remove(wordsCorrected, wordsCorrected[correctWord])
-                correctWord = 0
-            break
+                i += 1
         return rightCase
 
     def __checkCase(self, word):

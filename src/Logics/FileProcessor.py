@@ -15,7 +15,7 @@ class FileProcessor:
         fileFolder = self.__definePathToFile()
         file = '%s\\Example.txt' % fileFolder
         textReadfromFile = self.__readFile(file)
-        textCorrected = EC().correctText(textReadfromFile)
+        textCorrected = EC().preprocessText(textReadfromFile)
         print(textCorrected)
         self.__writeToFile(textCorrected, file)
 
