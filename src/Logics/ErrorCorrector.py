@@ -2,6 +2,7 @@ import re
 import pymorphy2
 
 from deeppavlov import configs, build_model
+from stop_words import get_stop_words
 
 
 class ErrorCorrector:
@@ -11,11 +12,20 @@ class ErrorCorrector:
 
     def preprocessText(self, textReadfromFile):
         textToWords = self.__divideIntoTokens(textReadfromFile)
-        wordsCorrected = self.correctorModel(textToWords)
-        rightWordsCaseList = self.__correctMatch(textToWords, wordsCorrected)
-        nomensGeoxList = self.__defineNomens(rightWordsCaseList)
-        textCorrected = self.__insertRightCasetoText(nomensGeoxList, textToWords, textReadfromFile)
+        noStopWordsList = self.__checkStopWords(textToWords)
+        wordsCorrected = self.correctorModel(noStopWordsList)
+        rightWordsCaseList = self.__correctMatch(noStopWordsList, wordsCorrected)
+        properNounsList = self.__defineProperNouns(rightWordsCaseList)
+        textCorrected = self.__insertRightCasetoText(properNounsList, noStopWordsList, textReadfromFile)
         return textCorrected
+
+    def __checkStopWords(self, textToWords):
+        stopCorpora = get_stop_words('ru')
+        noStopWordsList = []
+        for word in textToWords:
+            if word not in stopCorpora:
+                noStopWordsList.append(word)
+        return noStopWordsList
 
     def __divideIntoTokens(self, text):
         textTokenized = re.findall(r'\d+(?:,\d+)?|[-\w]+|[А-Яа-яЁё]+', text)
@@ -53,13 +63,13 @@ class ErrorCorrector:
         textCorrected = textReadfromFile
         return textCorrected
 
-    def __defineNomens(self, wordsCorrected):
-        nomensGeoxList = []
+    def __defineProperNouns(self, wordsCorrected):
+        properNounsList = []
         morph = pymorphy2.MorphAnalyzer()
         for word in wordsCorrected:
-            grammem = morph.parse(word)
-            for tags in grammem:
-                if "Surn" in tags.tag or "Name" in tags.tag or "Geox" in tags.tag:
+            grammarTags = morph.parse(word)
+            for criteria in grammarTags:
+                if "Surn" in criteria.tag or "Name" in criteria.tag or "Geox" in criteria.tag:
                     word = word.title()
-            nomensGeoxList.append(word)
-        return nomensGeoxList
+            properNounsList.append(word)
+        return properNounsList
