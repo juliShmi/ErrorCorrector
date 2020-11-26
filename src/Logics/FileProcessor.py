@@ -4,14 +4,11 @@ from pathlib import Path
 import codecs
 
 from src.Logics.ErrorCorrector import ErrorCorrector as EC
-from src.Logics.NeededFile import NeededFile
 
 
 class FileProcessor:
 
     def modifyFile(self):
-        NF = NeededFile()
-        print(NF)
         fileFolder = self.__definePathToFile()
         file = '%s\\Example.txt' % fileFolder
         textReadfromFile = self.__readFile(file)
