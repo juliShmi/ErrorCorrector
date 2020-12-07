@@ -9,14 +9,13 @@ class ErrorCorrector:
     def __init__(self):
         self.correctorModel = build_model(configs.spelling_correction.brillmoore_kartaslov_ru, download=False)
 
-
-    def preprocessText(self, textReadfromFile):
-        textToWords = self.__divideIntoTokens(textReadfromFile)
-        noStopWordsList = self.__checkStopWords(textToWords)
+    def preprocessText(self, sentenceWithErrors):
+        sentenceToWords = self.divideIntoTokens(sentenceWithErrors)
+        noStopWordsList = self.__checkStopWords(sentenceToWords)
         wordsCorrected = self.correctorModel(noStopWordsList)
         rightWordsCaseList = self.__correctMatch(noStopWordsList, wordsCorrected)
         properNounsList = self.__defineProperNouns(rightWordsCaseList)
-        textCorrected = self.__insertRightCasetoText(properNounsList, noStopWordsList, textReadfromFile)
+        textCorrected = self.__insertRightCasetoText(properNounsList, noStopWordsList, sentenceWithErrors)
         return textCorrected
 
     def __checkStopWords(self, textToWords):
@@ -25,10 +24,12 @@ class ErrorCorrector:
         for word in textToWords:
             if word not in stopCorpora:
                 noStopWordsList.append(word)
+        if len(noStopWordsList) == 0:
+            return textToWords
         return noStopWordsList
 
-    def __divideIntoTokens(self, text):
-        textTokenized = re.findall(r'\d+(?:,\d+)?|[-\w]+|[А-Яа-яЁё]+', text)
+    def divideIntoTokens(self, text):
+        textTokenized = re.findall(r'\d+(?:,\d+)?|[-\w]+[А-ЯЁа-яё]+', text)
         return textTokenized
 
     def __correctMatch(self, textToWords, wordsCorrected):
