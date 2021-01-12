@@ -42,7 +42,7 @@ class ErrorCorrector:
         return noStopWordsList
 
     def divideIntoTokens(self, text):
-        textTokenized = re.findall(r'\d+(?:,\d+)?|[-\w][А-ЯЁа-яё]+', text)
+        textTokenized = re.findall(r'\d+(?:,\d+)?|[\w]+[-\w]+|[\w]', text)
         return textTokenized
 
     def __correctMatch(self, textToWords, wordsCorrected):
