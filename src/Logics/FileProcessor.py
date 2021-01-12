@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 
 import codecs
-from nltk import tokenize
+import re
 from sklearn import metrics
 
 from src.Logics.ErrorCorrector import ErrorCorrector as EC
@@ -12,14 +12,10 @@ class FileProcessor:
 
     def modifyFile(self):
         self.correctText, self.errorText = self.prepareFiles()
-        self.correctTextTokenized, self.errorTextTokenized = self.tokenizeText(self.correctText, self.errorText)
-        print(len(self.correctTextTokenized), len(self.errorTextTokenized))
-        afterCorrection = []
-        sentenceCorrected = EC().preprocessText(self.errorText)
-        print(sentenceCorrected)
-        print(afterCorrection)
-        print(len(afterCorrection))
-        print(metrics.classification_report(self.correctText, sentenceCorrected))
+        self.correctTextTokenized, self.errorSentencesList = self.tokenizeText(self.correctText, self.errorText)
+        print(len(self.correctTextTokenized), len(self.errorSentencesList))
+        afterCorrection = EC().preprocessText(self.errorSentencesList)
+        print(metrics.classification_report(self.correctTextTokenized, afterCorrection))
 
     def prepareFiles(self):
         fileFolder = self.__definePathToFile()
@@ -30,9 +26,10 @@ class FileProcessor:
         return correctText, errorText
 
     def tokenizeText(self, correctText, errorText):
-        correctTextTokenized = tokenize.sent_tokenize(correctText, language='russian')
-        errorTextTokenized = tokenize.sent_tokenize(errorText, language="russian")
+        correctTextTokenized = re.split(r' *[\…\.\?!][\'"\)\]\»]* *', correctText)
+        errorTextTokenized = re.split(r' *[\…\.\?!][\'"\)\]\»]* *', errorText)
         return correctTextTokenized, errorTextTokenized
+
 
     def __definePathToFile(self):
         rootProjectPath = Path(os.path.abspath(__file__)).parents[2]

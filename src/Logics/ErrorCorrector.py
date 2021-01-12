@@ -6,17 +6,30 @@ from stop_words import get_stop_words
 
 
 class ErrorCorrector:
-    def __init__(self):
-        self.correctorModel = build_model(configs.spelling_correction.brillmoore_kartaslov_ru, download=False)
 
-    def preprocessText(self, sentenceWithErrors):
-        sentenceToWords = self.divideIntoTokens(sentenceWithErrors)
-        noStopWordsList = self.__checkStopWords(sentenceToWords)
-        wordsCorrected = self.correctorModel(noStopWordsList)
-        rightWordsCaseList = self.__correctMatch(noStopWordsList, wordsCorrected)
+    def preprocessText(self, errorSentencesList):
+        sentencesListCorrected = self.__useDeeppavlov(errorSentencesList)
+        afterCorrection = []
+        i = 0
+        while i < len(sentencesListCorrected):
+            errorSentenceTokens, properNounsList = self.__returnRightCaseSentence(sentencesListCorrected[i],
+                                                                                  errorSentencesList[i])
+            textCorrected = self.__insertRightCasetoText(errorSentenceTokens, properNounsList, errorSentencesList[i])
+            afterCorrection.append(textCorrected)
+            i += 1
+        return afterCorrection
+
+    def __returnRightCaseSentence(self, sentenceCorrected, errorSentence):
+        sentenceCorrectedTokens = self.divideIntoTokens(sentenceCorrected)
+        errorSentenceTokens = self.divideIntoTokens(errorSentence)
+        rightWordsCaseList = self.__correctMatch(errorSentenceTokens, sentenceCorrectedTokens)
         properNounsList = self.__defineProperNouns(rightWordsCaseList)
-        textCorrected = self.__insertRightCasetoText(properNounsList, noStopWordsList, sentenceWithErrors)
-        return textCorrected
+        return errorSentenceTokens, properNounsList
+
+    def __useDeeppavlov(self, errorSentencesList):
+        correctorModel = build_model(configs.spelling_correction.brillmoore_kartaslov_ru, download=False)
+        sentencesListCorrected = correctorModel(errorSentencesList)
+        return sentencesListCorrected
 
     def __checkStopWords(self, textToWords):
         stopCorpora = get_stop_words('ru')
@@ -29,7 +42,7 @@ class ErrorCorrector:
         return noStopWordsList
 
     def divideIntoTokens(self, text):
-        textTokenized = re.findall(r'\d+(?:,\d+)?|[-\w]+[А-ЯЁа-яё]+', text)
+        textTokenized = re.findall(r'\d+(?:,\d+)?|[-\w][А-ЯЁа-яё]+', text)
         return textTokenized
 
     def __correctMatch(self, textToWords, wordsCorrected):
@@ -52,7 +65,7 @@ class ErrorCorrector:
         else:
             return str
 
-    def __insertRightCasetoText(self, rightWordsCaseList, textToWords, textReadfromFile):
+    def __insertRightCasetoText(self, textToWords, rightWordsCaseList, textReadfromFile):
         if len(rightWordsCaseList) == len(textToWords):
             i = 0
             while i < len(textToWords):
