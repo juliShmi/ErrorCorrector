@@ -7,24 +7,33 @@ from stop_words import get_stop_words
 
 class ErrorCorrector:
 
-    def preprocessText(self, errorSentencesList):
-        sentencesListCorrected = self.__useDeeppavlov(errorSentencesList)
-        afterCorrection = []
-        i = 0
-        while i < len(sentencesListCorrected):
-            errorSentenceTokens, properNounsList = self.__returnRightCaseSentence(sentencesListCorrected[i],
-                                                                                  errorSentencesList[i])
-            textCorrected = self.__insertRightCasetoText(errorSentenceTokens, properNounsList, errorSentencesList[i])
-            afterCorrection.append(textCorrected)
-            i += 1
-        return afterCorrection
+    def returnProcessedSentences(self, originalText, errorText):
+        originalSentencesList, errorSentencesList = self.textToSentences(originalText, errorText)
+        correctedSentencesList = self.__useDeeppavlov(errorSentencesList)
+        processedSentencesList = self.__returnRightCaseSentence(errorSentencesList, correctedSentencesList)
+        return originalSentencesList, processedSentencesList
 
-    def __returnRightCaseSentence(self, sentenceCorrected, errorSentence):
-        sentenceCorrectedTokens = self.divideIntoTokens(sentenceCorrected)
-        errorSentenceTokens = self.divideIntoTokens(errorSentence)
-        rightWordsCaseList = self.__correctMatch(errorSentenceTokens, sentenceCorrectedTokens)
-        properNounsList = self.__defineProperNouns(rightWordsCaseList)
-        return errorSentenceTokens, properNounsList
+    def textToSentences(self, originalText, errorText):
+        originalSentencesList = re.split(r' *[\…\.\?!][\'"\)\]\»]* *', originalText)
+        errorSentencesList = re.split(r' *[\…\.\?!][\'"\)\]\»]* *', errorText)
+        return originalSentencesList, errorSentencesList
+
+    def sentencesToWords(self, sentencesList):
+        wordsList = re.findall(r'\d+(?:,\d+)?|[\w]+[-\w]+|[\w]', sentencesList)
+        return wordsList
+
+    def __returnRightCaseSentence(self, errorSentencesList, correctedSentencesList):
+        processedSentencesList = []
+        i = 0
+        while i < len(correctedSentencesList):
+            errorWordsList = self.sentencesToWords(errorSentencesList[i])
+            correctedWordsList = self.sentencesToWords(correctedSentencesList[i])
+            rightWordsCaseList = self.__correctMatch(errorWordsList, correctedWordsList)
+            properNounsList = self.__defineProperNouns(rightWordsCaseList)
+            correctionToText = self.__insertRightCasetoText(errorWordsList, properNounsList, errorSentencesList[i])
+            processedSentencesList.append(correctionToText)
+            i += 1
+        return processedSentencesList
 
     def __useDeeppavlov(self, errorSentencesList):
         correctorModel = build_model(configs.spelling_correction.brillmoore_kartaslov_ru, download=False)
@@ -40,10 +49,6 @@ class ErrorCorrector:
         if len(noStopWordsList) == 0:
             return textToWords
         return noStopWordsList
-
-    def divideIntoTokens(self, text):
-        textTokenized = re.findall(r'\d+(?:,\d+)?|[\w]+[-\w]+|[\w]', text)
-        return textTokenized
 
     def __correctMatch(self, textToWords, wordsCorrected):
         rightCase = []

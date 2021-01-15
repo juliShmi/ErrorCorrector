@@ -1,6 +1,6 @@
 from symspellpy import SymSpell, Verbosity
 from src.Logics.FileProcessor import FileProcessor as FP
-import nltk
+import re
 from sklearn.metrics import precision_recall_fscore_support as score
 
 class Symspell:
@@ -14,15 +14,15 @@ class Symspell:
         corpusPath = 'C:\\Users\\ishmitko\\Desktop\\corpusRus.txt'
         speller.create_dictionary(corpusPath, encoding='utf-8')
         for sentence in errorTextTokenized:
-            sentenceWords = nltk.word_tokenize(sentence, language='russian')
+            sentenceWords = re.findall(r'\d+(?:,\d+)?|[\w]+[-\w]+|[\w]', sentence)
             for word in sentenceWords:
                 suggestions = speller.lookup(word, Verbosity.CLOSEST,
                                            max_edit_distance=2, include_unknown=True)
                 for suggestion in suggestions:
-                    print(suggestion.term)
                     afterCorrection.append(suggestion.term)
                     break
         print(afterCorrection)
+        print(len(afterCorrection))
 
 
 

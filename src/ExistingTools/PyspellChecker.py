@@ -11,13 +11,14 @@ class PySpellChecker:
         checker = SpellChecker()
         corpusPath = 'C:\\Users\\ishmitko\\Desktop\\corpusRus.txt'
         checker.word_frequency.load_text_file(corpusPath)
+        correctedWords = []
         for sentence in errorTextTokenized:
             sentenceWords = re.findall(r'\d+(?:,\d+)?|[\w]+[-\w]+|[\w]', sentence)
-            misspelled = checker.unknown(sentenceWords)
-            correctedWords = []
-            for word in misspelled:
-                correctWord = checker.correction(word)
-                print(correctWord)
+            for word in sentenceWords:
+                misspelled = checker.correction(word)
+                correctedWords.append(misspelled)
+        print(correctedWords)
+        print(len(correctedWords))
 
 
 if __name__ == '__main__':
