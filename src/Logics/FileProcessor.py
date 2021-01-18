@@ -11,6 +11,7 @@ class FileProcessor:
     def modifyFile(self):
         self.originalText, self.errorText = self.prepareFiles()
         originalSentencesList, processedSentencesList = EC().returnProcessedSentences(self.originalText, self.errorText)
+        print(processedSentencesList)
         Metrics().estimateCorrections(self.originalText, originalSentencesList, processedSentencesList)
 
     def prepareFiles(self):
@@ -31,3 +32,11 @@ class FileProcessor:
             textReadfromFile = fileOpened.read()
         fileOpened.close()
         return textReadfromFile
+
+    def definePathToCoprus(self):
+        rootProjectPath = Path(os.path.abspath(__file__)).parents[2]
+        fileFolder = '%s\\dictionaryCorpus' % rootProjectPath
+        corpusRusPath = '%s\\corpusRus.txt' % fileFolder
+        return corpusRusPath
+
+

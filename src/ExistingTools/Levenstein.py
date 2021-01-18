@@ -1,20 +1,19 @@
 from deeppavlov import configs, build_model
 from src.Logics.FileProcessor import FileProcessor as FP
-from sklearn.metrics import precision_recall_fscore_support as score
+from src.Logics.ErrorCorrector import ErrorCorrector as EC
+from src.Logics.Metrics import Metrics
+
 
 class Levenstein:
 
     def useLevenstein(self):
-        self.correctText, self.errorText = FP().prepareFiles()
-        correctTextTokenized, errorTextTokenized = FP().tokenizeText(self.correctText, self.errorText)
-        correctorModel = build_model(configs.spelling_correction.levenshtein_corrector_ru, download=False)
-        textCorrected = correctorModel(errorTextTokenized)
-        print(textCorrected)
-        precision, recall, fScore, support = score(correctTextTokenized, textCorrected, average='macro')
-        print('Precision : {}'.format(precision))
-        print('Recall    : {}'.format(recall))
-        print('F-score   : {}'.format(fScore))
-        print('Support   : {}'.format(support))
+        self.originalText, self.errorText = FP().prepareFiles()
+        originalSentencesList, errorSentencesList = EC().textToSentences(self.originalText, self.errorText)
+        print(len(originalSentencesList), len(errorSentencesList))
+        correctorModel = build_model(configs.spelling_correction.levenshtein_corrector_ru, download=True)
+        processedSentencesList = correctorModel(errorSentencesList)
+        Metrics().estimateWords(self.originalText, processedSentencesList)
+
 
 if __name__ == '__main__':
     Levenstein().useLevenstein()

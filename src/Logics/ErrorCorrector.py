@@ -9,7 +9,8 @@ class ErrorCorrector:
 
     def returnProcessedSentences(self, originalText, errorText):
         originalSentencesList, errorSentencesList = self.textToSentences(originalText, errorText)
-        correctedSentencesList = self.__useDeeppavlov(errorSentencesList)
+        print(len(originalSentencesList), len(errorSentencesList))
+        correctedSentencesList = self.useDeeppavlov(errorSentencesList)
         processedSentencesList = self.__returnRightCaseSentence(errorSentencesList, correctedSentencesList)
         return originalSentencesList, processedSentencesList
 
@@ -30,15 +31,15 @@ class ErrorCorrector:
             correctedWordsList = self.sentencesToWords(correctedSentencesList[i])
             rightWordsCaseList = self.__correctMatch(errorWordsList, correctedWordsList)
             properNounsList = self.__defineProperNouns(rightWordsCaseList)
-            correctionToText = self.__insertRightCasetoText(errorWordsList, properNounsList, errorSentencesList[i])
+            correctionToText = self.__insertRightCasetoSentence(errorWordsList, properNounsList, errorSentencesList[i])
             processedSentencesList.append(correctionToText)
             i += 1
         return processedSentencesList
 
-    def __useDeeppavlov(self, errorSentencesList):
+    def useDeeppavlov(self, errorSentencesList):
         correctorModel = build_model(configs.spelling_correction.brillmoore_kartaslov_ru, download=False)
-        sentencesListCorrected = correctorModel(errorSentencesList)
-        return sentencesListCorrected
+        correctedSentencesList = correctorModel(errorSentencesList)
+        return correctedSentencesList
 
     def __checkStopWords(self, textToWords):
         stopCorpora = get_stop_words('ru')
@@ -50,15 +51,15 @@ class ErrorCorrector:
             return textToWords
         return noStopWordsList
 
-    def __correctMatch(self, textToWords, wordsCorrected):
-        rightCase = []
-        if len(textToWords) == len(wordsCorrected):
+    def __correctMatch(self, errorWordsList, correctedWordsList):
+        rightWordsCaseList = []
+        if len(errorWordsList) == len(correctedWordsList):
             i = 0
-            while i < len(textToWords):
-                rightWord = self.__checkCase(textToWords[i])(wordsCorrected[i])
-                rightCase.append(rightWord)
+            while i < len(errorWordsList):
+                rightWord = self.__checkCase(errorWordsList[i])(correctedWordsList[i])
+                rightWordsCaseList.append(rightWord)
                 i += 1
-        return rightCase
+        return rightWordsCaseList
 
     def __checkCase(self, word):
         if word.isupper():
@@ -70,22 +71,22 @@ class ErrorCorrector:
         else:
             return str
 
-    def __insertRightCasetoText(self, textToWords, rightWordsCaseList, textReadfromFile):
-        if len(rightWordsCaseList) == len(textToWords):
+    def __insertRightCasetoSentence(self, errorWordsList, properNounsList, errorSentence):
+        if len(properNounsList) == len(errorWordsList):
             i = 0
-            while i < len(textToWords):
-                textCorrected = re.sub(textToWords[i], rightWordsCaseList[i], textReadfromFile)
-                textReadfromFile = textCorrected
+            while i < len(errorWordsList):
+                replacedWords = re.sub(errorWordsList[i], properNounsList[i], errorSentence)
+                errorSentence = replacedWords
                 i += 1
         else:
             print('Check the length of lists')
-        textCorrected = textReadfromFile
-        return textCorrected
+        correctionToText = errorSentence
+        return correctionToText
 
-    def __defineProperNouns(self, wordsCorrected):
+    def __defineProperNouns(self, rightWordsCaseList):
         properNounsList = []
         morph = pymorphy2.MorphAnalyzer()
-        for word in wordsCorrected:
+        for word in rightWordsCaseList:
             grammarTags = morph.parse(word)
             for criteria in grammarTags:
                 if "Surn" in criteria.tag or "Name" in criteria.tag or "Geox" in criteria.tag:
