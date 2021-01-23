@@ -1,23 +1,26 @@
 import os
-from pathlib import Path
-
 import codecs
 
+from pathlib import Path
 from src.Logics.ErrorCorrector import ErrorCorrector as EC
-from src.Logics.NeededFile import NeededFile
+from src.Logics.Metrics import Metrics
 
 
 class FileProcessor:
 
     def modifyFile(self):
-        NF = NeededFile()
-        print(NF)
+        self.originalText, self.errorText = self.prepareFiles()
+        originalSentencesList, processedSentencesList = EC().returnProcessedSentences(self.originalText, self.errorText)
+        print(processedSentencesList)
+        Metrics().estimateCorrections(self.originalText, originalSentencesList, processedSentencesList)
+
+    def prepareFiles(self):
         fileFolder = self.__definePathToFile()
-        file = '%s\\Example.txt' % fileFolder
-        textReadfromFile = self.__readFile(file)
-        textCorrected = EC().correctText(textReadfromFile)
-        print(textCorrected)
-        self.__writeToFile(textCorrected, file)
+        commonErrors = '%s\\ZapovednikErrors.txt' % fileFolder
+        commonText = '%s\\Zapovednik.txt' % fileFolder
+        errorText = self.__readFile(commonErrors)
+        correctText = self.__readFile(commonText)
+        return correctText, errorText
 
     def __definePathToFile(self):
         rootProjectPath = Path(os.path.abspath(__file__)).parents[2]
@@ -30,7 +33,10 @@ class FileProcessor:
         fileOpened.close()
         return textReadfromFile
 
-    def __writeToFile(self, newSentence, file):
-        fileOpened = codecs.open(file, 'w', encoding='utf-8')
-        fileOpened.write(newSentence)
-        fileOpened.close()
+    def definePathToCoprus(self):
+        rootProjectPath = Path(os.path.abspath(__file__)).parents[2]
+        fileFolder = '%s\\dictionaryCorpus' % rootProjectPath
+        corpusRusPath = '%s\\corpusRus.txt' % fileFolder
+        return corpusRusPath
+
+

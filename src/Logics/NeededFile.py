@@ -1,2 +1,0 @@
-class NeededFile:
-    pass
